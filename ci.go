@@ -14,6 +14,7 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/cydev/ci/discovery"
 	_ "github.com/go-sql-driver/mysql"
+	"bytes"
 )
 
 func execute(args ...string) error {
@@ -197,11 +198,26 @@ func main() {
 		{
 			Name: "update",
 			Action: func(c *cli.Context) {
-				mustexec("git", "fetch")
+				mustexec("git", "fetch", "origin", getProject(c))
 				mustexec("git", "checkout", getProject(c))
 				mustexec("git", "submodule", "update")
 			},
 			Usage: "Perform git checkout",
+		},
+		{
+			Name: "deploy",
+			Action: func(c *cli.Context) {
+				cmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
+				buff := new(bytes.Buffer)
+				cmd.Stderr = os.Stderr
+				cmd.Stdout = buff
+				if err := cmd.Run(); err != nil {
+					log.Fatalln("unable to get git branch", err)
+				}
+				project := strings.Trim(buff.String(), "\n ")
+				fmt.Println("deploying branch", project)
+				mustexec("fab", "dev", fmt.Sprintf("init:branch=%s", project))
+			},
 		},
 		{
 			Name: "init",
@@ -229,7 +245,7 @@ func main() {
 						panic(err)
 					}
 				}
-				mustexec("sh", "-c", fmt.Sprintf("cp -r %s %s", filepath.Join(src, "*"), dst))
+				mustexec("sh", "-c", fmt.Sprintf("cp -r %s %s", filepath.Join(src, "."), dst))
 				fmt.Println("OK")
 			},
 		},
