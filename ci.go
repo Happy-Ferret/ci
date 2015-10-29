@@ -204,6 +204,36 @@ func main() {
 			Usage: "Perform git checkout",
 		},
 		{
+			Name: "init",
+			Usage: "initialize code for container",
+			Flags: []cli.Flag {
+				cli.StringFlag{
+					Name: "dir",
+					Value: "/container",
+					EnvVar: "CI_DIR",
+				},
+				cli.StringFlag{
+					Name: "source",
+					Value: "master.dev.tera-online.ru",
+					EnvVar: "CI_SOURCE",
+				},
+			},
+			Action: func(c *cli.Context) {
+				project := c.Args().First()
+				dir := c.String("dir")
+				src := filepath.Join(dir, c.String("source"))
+				dst := filepath.Join(dir, strings.Replace(c.String("source"), "master", project, -1))
+				fmt.Print("initializing project ", project, " in ", dst, "...")
+				if err := os.Mkdir(dst, 0777); err != nil {
+					if !os.IsExist(err) {
+						panic(err)
+					}
+				}
+				mustexec("sh", "-c", fmt.Sprintf("cp -r %s %s", filepath.Join(src, "*"), dst))
+				fmt.Println("OK")
+			},
+		},
+		{
 			Name: "project",
 			Action: func(c *cli.Context) {
 				fmt.Print(getProject(c))
