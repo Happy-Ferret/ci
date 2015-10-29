@@ -2,11 +2,12 @@ package discovery
 
 import (
 	"fmt"
-	"github.com/fsouza/go-dockerclient"
 	"log"
 	"os"
 	"text/template"
 	"time"
+
+	"github.com/fsouza/go-dockerclient"
 )
 
 type Config struct {
