@@ -2,10 +2,8 @@ package discovery
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"text/template"
-	"time"
 
 	"github.com/fsouza/go-dockerclient"
 )
@@ -27,28 +25,6 @@ func (s *Server) Connect() error {
 	}
 	s.docker = c
 	return s.docker.Ping()
-}
-
-func (s *Server) Serve() {
-	ticker := time.NewTicker(time.Second)
-	for _ = range ticker.C {
-		containers, err := s.docker.ListContainers(docker.ListContainersOptions{
-			Filters: map[string][]string{
-				"label": []string{
-					"com.docker.compose.project",
-				},
-			},
-		})
-		if err != nil {
-			log.Println("list", err)
-			continue
-		}
-		for _, container := range containers {
-			project := container.Labels["com.docker.compose.project"]
-			service := container.Labels["com.docker.compose.service"]
-			log.Println(project, service)
-		}
-	}
 }
 
 type RenderContext struct {

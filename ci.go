@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"database/sql"
 	"fmt"
 	"io"
@@ -14,20 +15,15 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/cydev/ci/discovery"
 	_ "github.com/go-sql-driver/mysql"
-	"bytes"
 )
 
-func execute(args ...string) error {
+func mustExec(args ...string) {
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Stdin = os.Stdin
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
-	return cmd.Run()
-}
-
-func mustexec(args ...string) {
-	if err := execute(args...); err != nil {
-		log.Fatal("execute error:", err)
+	if err := cmd.Run(); err != nil {
+		log.Fatalln("execute", cmd.Args, "error:", err)
 	}
 }
 
@@ -198,9 +194,9 @@ func main() {
 		{
 			Name: "update",
 			Action: func(c *cli.Context) {
-				mustexec("git", "fetch", "origin", getProject(c))
-				mustexec("git", "checkout", getProject(c))
-				mustexec("git", "submodule", "update")
+				mustExec("git", "fetch", "origin", getProject(c))
+				mustExec("git", "checkout", getProject(c))
+				mustExec("git", "submodule", "update")
 			},
 			Usage: "Perform git checkout",
 		},
@@ -216,21 +212,21 @@ func main() {
 				}
 				project := strings.Trim(buff.String(), "\n ")
 				fmt.Println("deploying branch", project)
-				mustexec("fab", "dev", fmt.Sprintf("init:branch=%s", project))
+				mustExec("fab", "dev", fmt.Sprintf("init:branch=%s", project))
 			},
 		},
 		{
-			Name: "init",
+			Name:  "init",
 			Usage: "initialize code for container",
-			Flags: []cli.Flag {
+			Flags: []cli.Flag{
 				cli.StringFlag{
-					Name: "dir",
-					Value: "/container",
+					Name:   "dir",
+					Value:  "/container",
 					EnvVar: "CI_DIR",
 				},
 				cli.StringFlag{
-					Name: "source",
-					Value: "master.dev.tera-online.ru",
+					Name:   "source",
+					Value:  "master.dev.tera-online.ru",
 					EnvVar: "CI_SOURCE",
 				},
 			},
@@ -245,7 +241,7 @@ func main() {
 						panic(err)
 					}
 				}
-				mustexec("sh", "-c", fmt.Sprintf("cp -r %s %s", filepath.Join(src, "."), dst))
+				mustExec("rsync", "-az", src, dst)
 				fmt.Println("OK")
 			},
 		},
